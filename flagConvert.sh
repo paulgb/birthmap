@@ -1,6 +1,6 @@
 #!/bin/bash
 
-FLAG_HEIGHT=10
+FLAG_HEIGHT=24
 
 mkdir -p flags-png
 

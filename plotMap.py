@@ -12,8 +12,8 @@ from glob import glob
 SHAPE_FILE = 'map_data/nyct2010'
 DATA_FILE = 'acs_data/ACS_10_5YR_B05006_with_ann.csv'
 FLAG_FILES = 'flags-png/*.png'
-WIDTH = 6000
-HEIGHT = 9000
+WIDTH = int(6000 * 2.4)
+HEIGHT = int(9000 * 2.4)
 
 BOX_HEIGHT = 10
 BOX_WIDTH = 14 # approximation
@@ -162,7 +162,7 @@ def main():
     ctx = cairo.Context(surface)
 
     ctx.rectangle(0, 0, WIDTH, HEIGHT)
-    ctx.set_source_rgb(1,1,1)
+    ctx.set_source_rgb(0,0,0)
     ctx.fill()
 
     projection = get_projection(sf, surface)
@@ -186,19 +186,12 @@ def main():
                         x = x + img.get_width()
                         continue
                     else:
-                        pass
-                        #ctx.rectangle(x, y, BOX_WIDTH, BOX_HEIGHT)
-                        #ctx.set_source_rgb(1,0,0)
+                        print 'no image for %s' % country
                 else:
                     pass
-                    #ctx.rectangle(x, y, BOX_WIDTH, BOX_HEIGHT)
-                    #ctx.set_source_rgb(0,0,1)
+                    #print 'no tract for %s' % tract_id
             else:
                 pass
-                #ctx.rectangle(x, y, BOX_WIDTH, BOX_HEIGHT)
-                #ctx.set_source_rgb(0,1,0)
-            #ctx.fill()
-
 
             x = x + BOX_WIDTH
         y = y + BOX_HEIGHT
