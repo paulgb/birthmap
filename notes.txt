@@ -6,12 +6,12 @@ pdf
 
 - need to rotate map data
 
-Borough ID	Borough		County
-1		Manhattan	New York County
-2		Bronx		Bronx County
-3		Brooklyn	Kings County
-4		Queens		Queens County
-5		Staten Island	Richmond County
+Borough ID  Borough         County            County Tract Prefix
+1           Manhattan       New York County   36061
+2           Bronx           Bronx County      36005
+3           Brooklyn        Kings County      36047
+4           Queens          Queens Countya    36081
+5           Staten Island   Richmond County   36085
 
 
 Census Tract 7, Kings County, New York
