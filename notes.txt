@@ -1,0 +1,25 @@
+
+Dec 10, 2012
+
+res: 6000 x 9000px
+pdf
+
+- need to rotate map data
+
+Borough ID	Borough		County
+1		Manhattan	New York County
+2		Bronx		Bronx County
+3		Brooklyn	Kings County
+4		Queens		Queens County
+5		Staten Island	Richmond County
+
+
+Census Tract 7, Kings County, New York
+==
+3000700
+
+
+python?
+ - how to load esri shapefile
+
+
