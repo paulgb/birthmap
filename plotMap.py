@@ -7,14 +7,16 @@ from rtree.index import Index
 from math import pi as PI
 from shapely.geometry.point import Point
 from shapely.geometry.polygon import Polygon
+from glob import glob
 
 SHAPE_FILE = 'map_data/nyct2010'
 DATA_FILE = 'acs_data/ACS_10_5YR_B05006_with_ann.csv'
-WIDTH = 600
-HEIGHT = 900
+FLAG_FILES = 'flags-png/*.png'
+WIDTH = 6000
+HEIGHT = 9000
 
-BOX_HEIGHT = 20
-BOX_WIDTH = 30
+BOX_HEIGHT = 10
+BOX_WIDTH = 14 # approximation
 
 ROT = -0.0805
 ROT_RAD = ROT * (2*PI)
@@ -31,6 +33,18 @@ TRACTMAP = {
     '36085': '5'  # Staten Island / Richmond County
 }
 
+class FlagImages(object):
+    def __init__(self):
+        self.flags = dict()
+        for fn in glob(FLAG_FILES):
+            img = cairo.ImageSurface.create_from_png(fn)
+            fn = fn.split('/')[1].split('.')[0]
+            self.flags[fn] = img
+
+    def get_flag(self, country):
+        if country in self.flags:
+            return self.flags[country]
+
 def country_code(country):
     if country[:5] == 'Other':
         return
@@ -40,6 +54,8 @@ def country_code(country):
         return
     if country[:5] == 'West ':
         return
+    country = country.split(',')[0]
+    country = country.split(' (')[0]
     return country.lower().replace(' ','_').replace('.','')
 
 def map_tract(tract_id):
@@ -74,6 +90,8 @@ class BirthData(object):
     def pick_one(self, tract_id):
         num = random()
         tot = 0
+        if tract_id not in self.data:
+            return
         countries = self.data[tract_id]
         for (country, weight) in countries:
             tot += weight
@@ -133,6 +151,7 @@ def draw_projection(sf, ctx):
         ctx.stroke()
 
 def main():
+    flags = FlagImages()
     bd = BirthData(csv.reader(file(DATA_FILE)))
 
     sf = shapefile.Reader(SHAPE_FILE)
@@ -150,18 +169,35 @@ def main():
 
     y = 0
     while y < HEIGHT:
+        print y
         x = 0
         while x < WIDTH:
-            proj_point = projection.device_to_user(x, y)
-            ctx.rectangle(x, y, BOX_WIDTH, BOX_HEIGHT)
+            proj_point = projection.device_to_user(x+BOX_WIDTH/2, y+BOX_HEIGHT/2)
+
             record = polystore.get_shape_at_point(proj_point)
             if record:
                 tract_id = record[4]
-                print bd.pick_one(tract_id)
-                ctx.set_source_rgb(1,0,0)
+                country = bd.pick_one(tract_id)
+                if country:
+                    img = flags.get_flag(country)
+                    if img:
+                        ctx.set_source_surface(img, x, y)
+                        ctx.paint()
+                        x = x + img.get_width()
+                        continue
+                    else:
+                        pass
+                        #ctx.rectangle(x, y, BOX_WIDTH, BOX_HEIGHT)
+                        #ctx.set_source_rgb(1,0,0)
+                else:
+                    pass
+                    #ctx.rectangle(x, y, BOX_WIDTH, BOX_HEIGHT)
+                    #ctx.set_source_rgb(0,0,1)
             else:
-                ctx.set_source_rgb(0,1,0)
-            ctx.fill()
+                pass
+                #ctx.rectangle(x, y, BOX_WIDTH, BOX_HEIGHT)
+                #ctx.set_source_rgb(0,1,0)
+            #ctx.fill()
 
 
             x = x + BOX_WIDTH
