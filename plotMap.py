@@ -2,7 +2,7 @@
 import cairo
 import shapefile
 import csv
-from random import random
+from random import random, randint
 from rtree.index import Index
 from math import pi as PI
 from shapely.geometry.point import Point
@@ -15,7 +15,7 @@ FLAG_FILES = 'flags-png/*.png'
 WIDTH = int(6000 * 2.4)
 HEIGHT = int(9000 * 2.4)
 
-BOX_HEIGHT = 10
+BOX_HEIGHT = 24
 BOX_WIDTH = 14 # approximation
 
 ROT = -0.0805
@@ -170,7 +170,7 @@ def main():
     y = 0
     while y < HEIGHT:
         print y
-        x = 0
+        x = randint(0, BOX_WIDTH / 2)
         while x < WIDTH:
             proj_point = projection.device_to_user(x+BOX_WIDTH/2, y+BOX_HEIGHT/2)
 
