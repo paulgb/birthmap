@@ -12,11 +12,13 @@ from glob import glob
 SHAPE_FILE = 'map_data/nyct2010'
 DATA_FILE = 'acs_data/ACS_10_5YR_B05006_with_ann.csv'
 FLAG_FILES = 'flags-png/*.png'
-WIDTH = int(6000 * 2.4)
-HEIGHT = int(9000 * 2.4)
+#WIDTH = int(6000 * 2.4)
+#HEIGHT = int(9000 * 2.4)
+WIDTH = 6000
+HEIGHT = 9000
 
 BOX_HEIGHT = 24
-BOX_WIDTH = 14 # approximation
+BOX_WIDTH = 20 # approximation
 
 ROT = -0.0805
 ROT_RAD = ROT * (2*PI)
@@ -131,19 +133,27 @@ class PolyStore(object):
         candidates = self.index.intersection((x, y, x, y))
         for candidate in candidates:
             shape = self.shapes[candidate]
-            if Polygon(shape.points).contains(Point(x, y)):
-                return self.records[candidate]
+            for part in shape_to_parts_list(shape):
+                if Polygon(part).contains(Point(x, y)):
+                    return self.records[candidate]
         return None
+
+def shape_to_parts_list(shape):
+    parts = list(shape.parts)
+    return (shape.points[a:b] for (a, b) in zip(parts, parts[1:] + [None]))
 
 def draw_projection(sf, ctx):
     for shape in sf.shapes():
-        x, y = shape.points.pop(0)
-        ctx.move_to(x, y)
 
-        for x, y in shape.points:
-            ctx.line_to(x, y)
+        parts = shape_to_parts_list(shape)
+        for part in parts:
+            x, y = part.pop(0)
+            ctx.move_to(x, y)
 
-        ctx.close_path()
+            for x, y in part:
+                ctx.line_to(x, y)
+
+            ctx.close_path()
     
         ctx.set_source_rgb(0,0,0)
         ctx.fill_preserve()
@@ -166,6 +176,9 @@ def main():
     ctx.fill()
 
     projection = get_projection(sf, surface)
+    #draw_projection(sf, projection)
+    #surface.write_to_png('out.png')
+    #return
 
     y = 0
     while y < HEIGHT:
