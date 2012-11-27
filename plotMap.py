@@ -14,8 +14,8 @@ DATA_FILE = 'acs_data/ACS_10_5YR_B05006_with_ann.csv'
 FLAG_FILES = 'flags-png/*.png'
 #WIDTH = int(6000 * 2.4)
 #HEIGHT = int(9000 * 2.4)
-WIDTH = 6000
-HEIGHT = 9000
+WIDTH = 600
+HEIGHT = 900
 
 GRAD_PX = 5
 GRAD_SHADE = 0.3
@@ -216,8 +216,9 @@ def main():
     ctx.fill()
 
     projection = get_projection(sf, surface)
+
     #draw_projection(sf, projection)
-    #surface.write_to_png('out.png')
+    #surface.write_to_png('outline.png')
     #return
 
     y = 0
@@ -241,12 +242,16 @@ def main():
                     else:
                         print 'no image for %s' % country
                 else:
-                    pass
-                    #print 'no tract for %s' % tract_id
+                    ctx.set_source_rgb(0,1,0)
+                    ctx.rectangle(x, y, BOX_WIDTH, BOX_HEIGHT)
+                    ctx.fill()
+                    x = x + BOX_WIDTH
             else:
-                pass
+                ctx.set_source_rgb(0,0,1)
+                ctx.rectangle(x, y, BOX_WIDTH, BOX_HEIGHT)
+                ctx.fill()
+                x = x + BOX_WIDTH
 
-            x = x + BOX_WIDTH
         y = y + BOX_HEIGHT
     
     surface.write_to_png('out.png')
