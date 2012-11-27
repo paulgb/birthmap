@@ -17,6 +17,9 @@ FLAG_FILES = 'flags-png/*.png'
 WIDTH = 6000
 HEIGHT = 9000
 
+GRAD_PX = 5
+GRAD_SHADE = 0.3
+
 BOX_HEIGHT = 24
 BOX_WIDTH = 20 # approximation
 
@@ -40,6 +43,43 @@ class FlagImages(object):
         self.flags = dict()
         for fn in glob(FLAG_FILES):
             img = cairo.ImageSurface.create_from_png(fn)
+            ctx = cairo.Context(img)
+
+            width = img.get_width()
+            height = img.get_height()
+
+            linear = cairo.LinearGradient(0, height - GRAD_PX, 0, height)
+            linear.add_color_stop_rgba(0, 0, 0, 0, 0)
+            linear.add_color_stop_rgba(1, 0, 0, 0, GRAD_SHADE)
+
+            ctx.rectangle(0, 0, width, height)
+            ctx.set_source(linear)
+            ctx.fill()
+
+            linear = cairo.LinearGradient(width - GRAD_PX, 0, width, 0)
+            linear.add_color_stop_rgba(0, 0, 0, 0, 0)
+            linear.add_color_stop_rgba(1, 0, 0, 0, GRAD_SHADE)
+
+            ctx.rectangle(0, 0, width, height)
+            ctx.set_source(linear)
+            ctx.fill()
+
+            linear = cairo.LinearGradient(GRAD_PX, 0, 0, 0)
+            linear.add_color_stop_rgba(0, 1, 1, 1, 0)
+            linear.add_color_stop_rgba(1, 1, 1, 1, GRAD_SHADE)
+
+            ctx.rectangle(0, 0, width, height)
+            ctx.set_source(linear)
+            ctx.fill()
+
+            linear = cairo.LinearGradient(0, GRAD_PX, 0, 0)
+            linear.add_color_stop_rgba(0, 1, 1, 1, 0)
+            linear.add_color_stop_rgba(1, 1, 1, 1, GRAD_SHADE)
+
+            ctx.rectangle(0, 0, width, height)
+            ctx.set_source(linear)
+            ctx.fill()
+
             fn = fn.split('/')[1].split('.')[0]
             self.flags[fn] = img
 
