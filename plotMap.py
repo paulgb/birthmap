@@ -2,7 +2,7 @@
 import cairo
 import shapefile
 import csv
-from random import random, randint
+from random import random, randint, uniform, randrange
 from rtree.index import Index
 from math import pi as PI
 from shapely.geometry.point import Point
@@ -14,15 +14,21 @@ DATA_FILE = 'acs_data/ACS_10_5YR_B05006_with_ann.csv'
 FLAG_FILES = 'flags-png/*.png'
 #WIDTH = int(6000 * 2.4)
 #HEIGHT = int(9000 * 2.4)
-WIDTH = 600
-HEIGHT = 900
+WIDTH = 6000
+HEIGHT = 9000
 
 GRAD_PX = 5
 GRAD_SHADE = 0.3
 
 BOX_HEIGHT = 24
-BOX_WIDTH = 20 # approximation
+BOX_WIDTH = 48 # approximation
 
+SEA_SHADE_MIN = 0.3
+SEA_SHADE_MAX = 0.5
+GRASS_SHADE_MIN = 0.3
+GRASS_SHADE_MAX = 0.4
+
+# Projection
 ROT = -0.0805
 ROT_RAD = ROT * (2*PI)
 
@@ -39,46 +45,49 @@ TRACTMAP = {
 }
 
 class FlagImages(object):
+    def add_gradient(self, img):
+        ctx = cairo.Context(img)
+
+        width = img.get_width()
+        height = img.get_height()
+
+        linear = cairo.LinearGradient(0, height - GRAD_PX, 0, height)
+        linear.add_color_stop_rgba(0, 0, 0, 0, 0)
+        linear.add_color_stop_rgba(1, 0, 0, 0, GRAD_SHADE)
+
+        ctx.rectangle(0, 0, width, height)
+        ctx.set_source(linear)
+        ctx.fill()
+
+        linear = cairo.LinearGradient(width - GRAD_PX, 0, width, 0)
+        linear.add_color_stop_rgba(0, 0, 0, 0, 0)
+        linear.add_color_stop_rgba(1, 0, 0, 0, GRAD_SHADE)
+
+        ctx.rectangle(0, 0, width, height)
+        ctx.set_source(linear)
+        ctx.fill()
+
+        linear = cairo.LinearGradient(GRAD_PX, 0, 0, 0)
+        linear.add_color_stop_rgba(0, 1, 1, 1, 0)
+        linear.add_color_stop_rgba(1, 1, 1, 1, GRAD_SHADE)
+
+        ctx.rectangle(0, 0, width, height)
+        ctx.set_source(linear)
+        ctx.fill()
+
+        linear = cairo.LinearGradient(0, GRAD_PX, 0, 0)
+        linear.add_color_stop_rgba(0, 1, 1, 1, 0)
+        linear.add_color_stop_rgba(1, 1, 1, 1, GRAD_SHADE)
+
+        ctx.rectangle(0, 0, width, height)
+        ctx.set_source(linear)
+        ctx.fill()
+
     def __init__(self):
         self.flags = dict()
         for fn in glob(FLAG_FILES):
             img = cairo.ImageSurface.create_from_png(fn)
-            ctx = cairo.Context(img)
-
-            width = img.get_width()
-            height = img.get_height()
-
-            linear = cairo.LinearGradient(0, height - GRAD_PX, 0, height)
-            linear.add_color_stop_rgba(0, 0, 0, 0, 0)
-            linear.add_color_stop_rgba(1, 0, 0, 0, GRAD_SHADE)
-
-            ctx.rectangle(0, 0, width, height)
-            ctx.set_source(linear)
-            ctx.fill()
-
-            linear = cairo.LinearGradient(width - GRAD_PX, 0, width, 0)
-            linear.add_color_stop_rgba(0, 0, 0, 0, 0)
-            linear.add_color_stop_rgba(1, 0, 0, 0, GRAD_SHADE)
-
-            ctx.rectangle(0, 0, width, height)
-            ctx.set_source(linear)
-            ctx.fill()
-
-            linear = cairo.LinearGradient(GRAD_PX, 0, 0, 0)
-            linear.add_color_stop_rgba(0, 1, 1, 1, 0)
-            linear.add_color_stop_rgba(1, 1, 1, 1, GRAD_SHADE)
-
-            ctx.rectangle(0, 0, width, height)
-            ctx.set_source(linear)
-            ctx.fill()
-
-            linear = cairo.LinearGradient(0, GRAD_PX, 0, 0)
-            linear.add_color_stop_rgba(0, 1, 1, 1, 0)
-            linear.add_color_stop_rgba(1, 1, 1, 1, GRAD_SHADE)
-
-            ctx.rectangle(0, 0, width, height)
-            ctx.set_source(linear)
-            ctx.fill()
+            self.add_gradient(img)
 
             fn = fn.split('/')[1].split('.')[0]
             self.flags[fn] = img
@@ -224,7 +233,7 @@ def main():
     y = 0
     while y < HEIGHT:
         print y
-        x = randint(0, BOX_WIDTH / 2)
+        x = randint(-BOX_WIDTH / 2, 0)
         while x < WIDTH:
             proj_point = projection.device_to_user(x+BOX_WIDTH/2, y+BOX_HEIGHT/2)
 
@@ -242,15 +251,17 @@ def main():
                     else:
                         print 'no image for %s' % country
                 else:
-                    ctx.set_source_rgb(0,1,0)
-                    ctx.rectangle(x, y, BOX_WIDTH, BOX_HEIGHT)
+                    ctx.set_source_rgb(0,uniform(GRASS_SHADE_MIN,GRASS_SHADE_MAX),0)
+                    width = randrange(BOX_WIDTH/2, BOX_WIDTH+BOX_WIDTH/2)
+                    ctx.rectangle(x, y, width, BOX_HEIGHT)
                     ctx.fill()
-                    x = x + BOX_WIDTH
+                    x = x + width
             else:
-                ctx.set_source_rgb(0,0,1)
-                ctx.rectangle(x, y, BOX_WIDTH, BOX_HEIGHT)
+                ctx.set_source_rgb(0,0,uniform(SEA_SHADE_MIN,SEA_SHADE_MAX))
+                width = randrange(BOX_WIDTH/2, BOX_WIDTH+BOX_WIDTH/2)
+                ctx.rectangle(x, y, width, BOX_HEIGHT)
                 ctx.fill()
-                x = x + BOX_WIDTH
+                x = x + width
 
         y = y + BOX_HEIGHT
     
