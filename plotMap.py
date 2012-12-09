@@ -2,6 +2,7 @@
 import cairo
 import shapefile
 import csv
+from collections import defaultdict
 from random import random, randint, uniform, randrange
 from rtree.index import Index
 from math import pi as PI
@@ -12,10 +13,9 @@ from glob import glob
 SHAPE_FILE = 'map_data/nyct2010'
 DATA_FILE = 'acs_data/ACS_10_5YR_B05006_with_ann.csv'
 FLAG_FILES = 'flags-png/*.png'
-#WIDTH = int(6000 * 2.4)
-#HEIGHT = int(9000 * 2.4)
-WIDTH = 6000
-HEIGHT = 9000
+
+WIDTH = 7200
+HEIGHT = 10800
 
 GRAD_PX = 5
 GRAD_SHADE = 0.3
@@ -42,6 +42,22 @@ TRACTMAP = {
     '36047': '3', # Brooklyn / Kings County
     '36081': '4', # Queens / Queens County
     '36085': '5'  # Staten Island / Richmond County
+}
+
+TRACTSUB = {
+    '1009400': '1010200',
+    '1009600': '1010200',
+    '1010400': '1010200'
+}
+
+LAND_TRACT = [
+    '0',
+    '2011000'
+]
+
+SHAPE_LAND = {
+    '2001900': [0,1],
+    '1015200': [0]
 }
 
 class FlagImages(object):
@@ -112,7 +128,8 @@ def country_code(country):
 def map_tract(tract_id):
     county_id, county_tract = tract_id[:5], tract_id[5:]
     if county_id in TRACTMAP:
-        return '%s%s' % (TRACTMAP[county_id], county_tract)
+        tract_id = '%s%s' % (TRACTMAP[county_id], county_tract)
+        return TRACTSUB.get(tract_id, tract_id)
 
 class BirthData(object):
     def __init__(self, reader):
@@ -120,11 +137,11 @@ class BirthData(object):
         reader.next()
         country_indices = reader.next()
 
+        tract_origins = defaultdict(lambda: defaultdict(lambda: 0))
         for tract in reader:
             tract_id = map_tract(tract[1])
             if tract_id:
-                total = 0
-                origins = []
+                origins = tract_origins[tract_id]
                 for country, value in zip(country_indices, tract):
                     measure = country.split(';')[0]
                     if measure != 'Estimate' or value == '0':
@@ -133,14 +150,16 @@ class BirthData(object):
                     country = country.split(' - ')[-1]
                     code = country_code(country)
                     if code:
-                        origins.append((code, value))
-                        total += value
-                if total > 0:
-                    self.data[tract_id] = [(country, val / float(total)) for country, val in origins]
+                        origins[code] += value
+        for tract_id, origins in tract_origins.iteritems():
+            total = sum(x for (_, x) in origins.iteritems())
+            if total > 0:
+                self.data[tract_id] = [(country, val / float(total)) for country, val in origins.iteritems()]
 
     def pick_one(self, tract_id):
         num = random()
         tot = 0
+        tract_id = TRACTSUB.get(tract_id, tract_id)
         if tract_id not in self.data:
             return
         countries = self.data[tract_id]
@@ -176,15 +195,19 @@ class PolyStore(object):
         self.shapes = sf.shapes()
         self.records = sf.records()
         for index, shape in enumerate(self.shapes):
+            if len(shape.parts) > 1:
+                print self.records[index], len(shape.parts)
             self.index.insert(index, shape.bbox)
 
     def get_shape_at_point(self, (x, y)):
         candidates = self.index.intersection((x, y, x, y))
         for candidate in candidates:
             shape = self.shapes[candidate]
-            for part in shape_to_parts_list(shape):
+            for i, part in enumerate(shape_to_parts_list(shape)):
                 if Polygon(part).contains(Point(x, y)):
-                    return self.records[candidate]
+                    if i in SHAPE_LAND.get(self.records[candidate][4], []):
+                        return '0'
+                    return self.records[candidate][4]
         return None
 
 def shape_to_parts_list(shape):
@@ -237,10 +260,12 @@ def main():
         while x < WIDTH:
             proj_point = projection.device_to_user(x+BOX_WIDTH/2, y+BOX_HEIGHT/2)
 
-            record = polystore.get_shape_at_point(proj_point)
-            if record:
-                tract_id = record[4]
-                country = bd.pick_one(tract_id)
+            tract_id = polystore.get_shape_at_point(proj_point)
+            if tract_id:
+                if tract_id in LAND_TRACT:
+                    country = None
+                else:
+                    country = bd.pick_one(tract_id)
                 if country:
                     img = flags.get_flag(country)
                     if img:
